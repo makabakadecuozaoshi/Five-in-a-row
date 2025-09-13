@@ -10,10 +10,12 @@ CONFIG += c++11
 
 SOURCES += \
     main.cpp \
-    fiveinline.cpp
+    fiveinline.cpp \
+    myworker.cpp
 
 HEADERS += \
-    fiveinline.h
+    fiveinline.h \
+    myworker.h
 
 FORMS += \
     fiveinline.ui

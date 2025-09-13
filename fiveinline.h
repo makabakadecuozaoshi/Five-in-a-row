@@ -38,7 +38,12 @@ QT_END_NAMESPACE
 #include<unordered_set>
 #include<QPainter>
 #include<QMessageBox>
-#include<qDebug>
+#include<unordered_map>
+#include<deque>
+#include"myworker.h"
+#include<atomic>
+#include<mutex>
+//#include<qDebug>
 using namespace std;
 ///
 /// \brief The FiveInLine class
@@ -72,6 +77,14 @@ signals:
     void SIG_pieceDown(int blackorwhite , int x ,int y);
     //胜利信号
     void SIG_playerWin(int blackorwhite );
+    void SIG_getBetterScore0(int x,int y,int player);
+    void SIG_getBetterScore1(int x,int y,int player);
+    void SIG_getBetterScore2(int x,int y,int player);
+    void SIG_getBetterScore3(int x,int y,int player);
+    void SIG_getBetterScore4(int x,int y,int player);
+    void SIG_getBetterScore5(int x,int y,int player);
+    void SIG_getBetterScore6(int x,int y,int player);
+    void SIG_getBetterScore7(int x,int y,int player);
 public slots:
     //落子槽函数：鼠标释放捕捉落子位置(颜色 位置)
     void slot_pieceDown(int blackorwhite , int x ,int y);
@@ -175,6 +188,25 @@ private:
     int evaluateBoard(int color,vector<vector<int>>& board);
     //总体的棋面分析
     int evaluateBoard(vector<vector<int>>& board);
+    //ai等待时间过长 需要优化 分为三点优化
+    //优化1：α-β剪枝 提前排序一下 可以更大程度的剪枝
+    //优化2：hash表存储计算过的内容，用空间换时间
+    //优化3：多线程开发，获得最优位置
+    //哈希算法 记录棋面的分值，已经有的不会再计算
+    //思路将棋面信息作为key 然后得分记作value，棋面信息通过每个位置是012这样的字符表示，形成一个字符串
+    //那么长度就是15*15 那么长
+    string getBoardHash(vector<vector<int>> &board);
+    //hash表存数据 不能无休止的添加 需要在内存太大的时候淘汰 那么使用先进先出的淘汰方式
+    //借助辅助队列实现
+    unordered_map<string,int> evaluateCache;
+    deque<string> CacheQueue;
+    friend class MyWorker;
+    MyWorker *m_worker[8];
+    //任务数
+    atomic<int> m_taskCount;
+    mutex m_mtx;
+    //搜索的所有结果添加到数组
+    vector<vector<int>> m_vecScoreRes;
 };
 #define DEF_ALPHA_BETA 1
 #endif // FIVEINLINE_H

@@ -49,7 +49,45 @@ FiveInLine::FiveInLine(QWidget *parent)
     //connect(&m_countTimer , SIGNAL(timeout()) , this , SLOT(slot_countTimer()));
     //开始禁止操作
     slot_startGame();
+    for(int i=0;i<8;i++)
+    {
+        m_worker[i]=new MyWorker(this);
+        connect(m_worker[i],&MyWorker::SIG_getScoreFinish,
+                this,[this](int x,int y,int score)
+                {
+                m_taskCount--;
+                m_vecScoreRes.push_back({x,y,score});
+                if(m_taskCount==0)
+                {
+                    sort(m_vecScoreRes.begin(),m_vecScoreRes.end(),[&](vector<int>&a,vector<int>&b)
+                    {
+                        return a[2]>b[2];
+                    });
+                    int x=m_vecScoreRes[0][0];
+                    int y=m_vecScoreRes[0][1];
+                    if(x!=-1&&y!=-1)
+                    emit SIG_pieceDown(getBlackOrWhite(),x,y);
+                    m_vecScoreRes.clear();
+                }
 
+                });
+    }
+    connect(this,SIGNAL(SIG_getBetterScore0(int,int,int))
+            ,m_worker[0],SLOT(slot_getBetterScore(int,int,int)));
+    connect(this,SIGNAL(SIG_getBetterScore1(int,int,int))
+            ,m_worker[1],SLOT(slot_getBetterScore(int,int,int)));
+    connect(this,SIGNAL(SIG_getBetterScore2(int,int,int))
+            ,m_worker[2],SLOT(slot_getBetterScore(int,int,int)));
+    connect(this,SIGNAL(SIG_getBetterScore3(int,int,int))
+            ,m_worker[3],SLOT(slot_getBetterScore(int,int,int)));
+    connect(this,SIGNAL(SIG_getBetterScore4(int,int,int))
+            ,m_worker[4],SLOT(slot_getBetterScore(int,int,int)));
+    connect(this,SIGNAL(SIG_getBetterScore5(int,int,int))
+            ,m_worker[5],SLOT(slot_getBetterScore(int,int,int)));
+    connect(this,SIGNAL(SIG_getBetterScore6(int,int,int))
+            ,m_worker[6],SLOT(slot_getBetterScore(int,int,int)));
+    connect(this,SIGNAL(SIG_getBetterScore7(int,int,int))
+            ,m_worker[7],SLOT(slot_getBetterScore(int,int,int)));
 }
 
 FiveInLine::~FiveInLine()
@@ -237,7 +275,7 @@ int FiveInLine::getBlackOrWhite() const
 //切换当前回合
 void FiveInLine::changeBlackAndWhite()
 {
-    qDebug()<<__func__;
+    //qDebug()<<__func__;
     // 0 1 2
     m_blackOrWhite = (m_blackOrWhite + 1);
     if(m_blackOrWhite == 3)
@@ -419,7 +457,7 @@ void FiveInLine::slot_pieceDown(int blackorwhite , int x ,int y)
             m_colorCount = DEFAULT_COUNTER;
             //切换回合
             changeBlackAndWhite();
-            qDebug() << "AI颜色:" << m_cpuColor << "当前回合:" << getBlackOrWhite();
+            //qDebug() << "AI颜色:" << m_cpuColor << "当前回合:" << getBlackOrWhite();
             //电脑下棋：判断是否是电脑回合
             if(m_cpuColor == getBlackOrWhite())
             {
@@ -744,7 +782,7 @@ bool FiveInLine::isWin(int x, int y, vector<vector<int> > &board)
 
 void FiveInLine::pieceDownByBetterCpu()
 {
-    qDebug()<<__func__;
+    //qDebug()<<__func__;
     if(m_isOver) return;
     int bestX=-1;int bestY=-1;
     findBestMove(bestX,bestY,getBlackOrWhite(),MAX_DEPTH);
@@ -757,14 +795,50 @@ void FiveInLine::pieceDownByBetterCpu()
 
 void FiveInLine::findBestMove(int &bestX, int &bestY, int player, int depth)
 {
+    //一上来就是max层
     int BestValue=INT_MIN;
     bestX=-1;
     bestY=-1;
     vector<pair<int,int>> candidates;
-    vector<pair<int,int>> copyEveryStep=m_everyStepPos;
-    vector<vector<int>> copyBoard=m_board;
+    vector<pair<int,int>> &copyEveryStep=m_everyStepPos;
+    vector<vector<int>> &copyBoard=m_board;
+    //获取要看的点
     getNeedHandlePos(copyEveryStep,candidates,copyBoard);
-    for(auto& pos:candidates)
+    /*sort(candidates.begin(),candidates.end(),[&](pair<int,int>&a,pair<int,int>&b)
+    {
+        copyBoard[a.first][a.second]=player;
+        int scoreA=evaluateBoard(copyBoard);
+        copyBoard[a.first][a.second]=None;
+
+        copyBoard[b.first][b.second]=player;
+        int scoreB=evaluateBoard(copyBoard);
+        copyBoard[b.first][b.second]=None;
+        return scoreA>scoreB;
+    });*/
+    int count=candidates.size();
+    m_taskCount =count;
+    for(int i=0;i<count;++i)
+    {
+        switch (i%8) {
+        case 0:emit SIG_getBetterScore0(candidates[i].first,candidates[i].second,player);
+            break;
+        case 1:emit SIG_getBetterScore1(candidates[i].first,candidates[i].second,player);
+            break;
+        case 2:emit SIG_getBetterScore2(candidates[i].first,candidates[i].second,player);
+            break;
+        case 3:emit SIG_getBetterScore3(candidates[i].first,candidates[i].second,player);
+            break;
+        case 4:emit SIG_getBetterScore4(candidates[i].first,candidates[i].second,player);
+            break;
+        case 5:emit SIG_getBetterScore5(candidates[i].first,candidates[i].second,player);
+            break;
+        case 6:emit SIG_getBetterScore6(candidates[i].first,candidates[i].second,player);
+            break;
+        case 7:emit SIG_getBetterScore7(candidates[i].first,candidates[i].second,player);
+            break;
+        }
+    }
+    /*for(auto& pos:candidates)
     {
         int x=pos.first;
         int y=pos.second;
@@ -799,7 +873,7 @@ void FiveInLine::findBestMove(int &bestX, int &bestY, int player, int depth)
             bestX=x;
             bestY=y;
         }
-    }
+    }*/
 }
 
 void FiveInLine::getNeedHandlePos(vector<pair<int, int> > &copyEveryStep,
@@ -852,6 +926,35 @@ int FiveInLine::minmax(vector<vector<int> > &copyBoard, vector<pair<int, int> > 
     vector<pair<int,int>> candidates;
     getNeedHandlePos(copyEveryStep,candidates,copyBoard);
     if(candidates.empty()) return 0;
+    if(isMaximizing)
+    {
+        sort(candidates.begin(),candidates.end(),[&](pair<int,int>&a,pair<int,int>&b)
+        {
+            copyBoard[a.first][a.second]=player;
+            int scoreA=evaluateBoard(copyBoard);
+            copyBoard[a.first][a.second]=None;
+
+            copyBoard[b.first][b.second]=player;
+            int scoreB=evaluateBoard(copyBoard);
+            copyBoard[b.first][b.second]=None;
+            return scoreA>scoreB;
+        });
+    }else
+    {
+        sort(candidates.begin(),candidates.end(),[&](pair<int,int>&a,pair<int,int>&b)
+        {
+            copyBoard[a.first][a.second]=player;
+            int scoreA=evaluateBoard(Black,copyBoard);
+            copyBoard[a.first][a.second]=None;
+
+            copyBoard[b.first][b.second]=player;
+            int scoreB=evaluateBoard(Black,copyBoard);
+            copyBoard[b.first][b.second]=None;
+            return scoreA>scoreB;
+        });
+    }
+
+
     for(auto& pos:candidates)
     {
         int x=pos.first;
@@ -1011,7 +1114,41 @@ void FiveInLine::slot_countTimer()
 
 int FiveInLine::evaluateBoard(vector<vector<int> > &board)
 {
+    //先计算棋盘hash
+    //查看是否有 有就直接返回
+    //没有 计算并添加到缓存
+    //先查看是否要淘汰 如果是就先淘汰
+    string hash=getBoardHash(board);
+    if(evaluateCache.count(hash)>0)
+    {
+        return evaluateCache[hash];
+    }
     int white=evaluateBoard(White,board);
     int black=evaluateBoard(Black,board);
+    //这里多线程访问 因为访问共享的资源 所以与线程安全问题 需要加锁
+    {
+        lock_guard<mutex> lck(m_mtx);
+        if(CacheQueue.size()>10000)
+        {
+            evaluateCache.erase(CacheQueue.front());//根据key值删除，队列中添加的是字符串key值
+            CacheQueue.pop_front();
+        }
+        evaluateCache[hash]=white-black;
+        CacheQueue.push_back(hash);
+    }
+
     return white-black;
+}
+
+string FiveInLine::getBoardHash(vector<vector<int> > &board)
+{
+    string hash;
+    for(int i=0;i<FIL_COLS;++i)
+    {
+        for(int j=0;j<FIL_ROWS;++j)
+        {
+            hash+=to_string(board[i][j]);
+        }
+    }
+    return hash;
 }
