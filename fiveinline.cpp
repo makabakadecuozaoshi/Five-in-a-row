@@ -49,7 +49,7 @@ FiveInLine::FiveInLine(QWidget *parent)
     //connect(&m_countTimer , SIGNAL(timeout()) , this , SLOT(slot_countTimer()));
     //开始禁止操作
     slot_startGame();
-    for(int i=0;i<8;i++)
+    for(int i=0;i<4;i++)
     {
         m_worker[i]=new MyWorker(this);
         connect(m_worker[i],&MyWorker::SIG_getScoreFinish,
@@ -80,14 +80,14 @@ FiveInLine::FiveInLine(QWidget *parent)
             ,m_worker[2],SLOT(slot_getBetterScore(int,int,int)));
     connect(this,SIGNAL(SIG_getBetterScore3(int,int,int))
             ,m_worker[3],SLOT(slot_getBetterScore(int,int,int)));
-    connect(this,SIGNAL(SIG_getBetterScore4(int,int,int))
+    /*connect(this,SIGNAL(SIG_getBetterScore4(int,int,int))
             ,m_worker[4],SLOT(slot_getBetterScore(int,int,int)));
     connect(this,SIGNAL(SIG_getBetterScore5(int,int,int))
             ,m_worker[5],SLOT(slot_getBetterScore(int,int,int)));
     connect(this,SIGNAL(SIG_getBetterScore6(int,int,int))
             ,m_worker[6],SLOT(slot_getBetterScore(int,int,int)));
     connect(this,SIGNAL(SIG_getBetterScore7(int,int,int))
-            ,m_worker[7],SLOT(slot_getBetterScore(int,int,int)));
+            ,m_worker[7],SLOT(slot_getBetterScore(int,int,int)));*/
 }
 
 FiveInLine::~FiveInLine()
@@ -836,7 +836,7 @@ void FiveInLine::findBestMove(int &bestX, int &bestY, int player, int depth)
     m_taskCount =count;
     for(int i=0;i<count;++i)
     {
-        switch (i%8) {
+        switch (i%4) {
         case 0:emit SIG_getBetterScore0(candidates[i].first,candidates[i].second,player);
             break;
         case 1:emit SIG_getBetterScore1(candidates[i].first,candidates[i].second,player);
@@ -845,14 +845,14 @@ void FiveInLine::findBestMove(int &bestX, int &bestY, int player, int depth)
             break;
         case 3:emit SIG_getBetterScore3(candidates[i].first,candidates[i].second,player);
             break;
-        case 4:emit SIG_getBetterScore4(candidates[i].first,candidates[i].second,player);
+        /*case 4:emit SIG_getBetterScore4(candidates[i].first,candidates[i].second,player);
             break;
         case 5:emit SIG_getBetterScore5(candidates[i].first,candidates[i].second,player);
             break;
         case 6:emit SIG_getBetterScore6(candidates[i].first,candidates[i].second,player);
             break;
         case 7:emit SIG_getBetterScore7(candidates[i].first,candidates[i].second,player);
-            break;
+            break;*/
         }
     }
     /*for(auto& pos:candidates)
