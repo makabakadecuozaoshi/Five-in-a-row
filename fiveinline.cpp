@@ -796,9 +796,10 @@ void FiveInLine::pieceDownByBetterCpu()
 void FiveInLine::findBestMove(int &bestX, int &bestY, int player, int depth)
 {
     //一上来就是max层
-    int BestValue=INT_MIN;
+
     bestX=-1;
     bestY=-1;
+    int BestValue=INT_MIN;
     vector<pair<int,int>> candidates;
     vector<pair<int,int>> &copyEveryStep=m_everyStepPos;
     vector<vector<int>> &copyBoard=m_board;
@@ -815,6 +816,22 @@ void FiveInLine::findBestMove(int &bestX, int &bestY, int player, int depth)
         copyBoard[b.first][b.second]=None;
         return scoreA>scoreB;
     });*/
+    //9.14修改
+    for (auto& pos : candidates) {
+            int x = pos.first;
+            int y = pos.second;
+
+            // 模拟落子
+            copyBoard[x][y] = player;
+            if (isWin(x, y, copyBoard)) {
+                // 找到制胜点，直接返回
+                bestX = x;
+                bestY = y;
+                copyBoard[x][y] = None; // 恢复棋盘
+                return;
+            }
+            copyBoard[x][y] = None; // 恢复棋盘
+        }
     int count=candidates.size();
     m_taskCount =count;
     for(int i=0;i<count;++i)
@@ -907,6 +924,47 @@ void FiveInLine::getNeedHandlePos(vector<pair<int, int> > &copyEveryStep,
             }
         }
     }
+    //9.14修改
+    for (int x = 0; x < FIL_COLS; ++x) {
+           for (int y = 0; y < FIL_ROWS; ++y) {
+               if (board[x][y] != None) continue; // 只处理空位
+
+               // 检查8个方向是否存在“活四”或“冲四”（落子后可成五连）
+               for (auto &dir : directions) {
+                   int dx = dir.first;
+                   int dy = dir.second;
+                   // 统计当前方向及反方向的同色棋子数量（模拟落子后）
+                   int count = 1; // 假设在(x,y)落子
+                   // 正方向检查
+                   int cx = x + dx;
+                   int cy = y + dy;
+                   while (cx >= 0 && cx < FIL_COLS && cy >=0 && cy < FIL_ROWS
+                          && board[cx][cy] == White) { // 假设白子需要检测，可根据当前回合调整
+                       count++;
+                       cx += dx;
+                       cy += dy;
+                   }
+                   // 反方向检查
+                   cx = x - dx;
+                   cy = y - dy;
+                   while (cx >= 0 && cx < FIL_COLS && cy >=0 && cy < FIL_ROWS
+                          && board[cx][cy] == White) { // 同上，可改为动态判断当前玩家
+                       count++;
+                       cx -= dx;
+                       cy -= dy;
+                   }
+                   // 若落子后形成五连，则该位置必须加入候选点
+                   if (count >= 5) {
+                       int key = x * 100 + y;
+                       if (unique.find(key) == unique.end()) {
+                           unique.insert(key);
+                           candidates.push_back({x, y});
+                       }
+                       break; // 已确认是制胜点，无需检查其他方向
+                   }
+               }
+           }
+       }
 }
 
 int FiveInLine::minmax(vector<vector<int> > &copyBoard, vector<pair<int, int> > &copyEveryStep,
@@ -926,6 +984,7 @@ int FiveInLine::minmax(vector<vector<int> > &copyBoard, vector<pair<int, int> > 
     vector<pair<int,int>> candidates;
     getNeedHandlePos(copyEveryStep,candidates,copyBoard);
     if(candidates.empty()) return 0;
+
     if(isMaximizing)
     {
         sort(candidates.begin(),candidates.end(),[&](pair<int,int>&a,pair<int,int>&b)
@@ -939,7 +998,7 @@ int FiveInLine::minmax(vector<vector<int> > &copyBoard, vector<pair<int, int> > 
             copyBoard[b.first][b.second]=None;
             return scoreA>scoreB;
         });
-    }else
+    }/*else
     {
         sort(candidates.begin(),candidates.end(),[&](pair<int,int>&a,pair<int,int>&b)
         {
@@ -952,7 +1011,7 @@ int FiveInLine::minmax(vector<vector<int> > &copyBoard, vector<pair<int, int> > 
             copyBoard[b.first][b.second]=None;
             return scoreA>scoreB;
         });
-    }
+    }*/
 
 
     for(auto& pos:candidates)
@@ -964,12 +1023,13 @@ int FiveInLine::minmax(vector<vector<int> > &copyBoard, vector<pair<int, int> > 
         copyBoard[x][y]=isMaximizing?player:opponent;
         copyEveryStep.push_back({x,y});
         //检查是否获胜
-        bool win=isWin(x,y,copyBoard);
-        if(win)
+        //9.14修改
+        //bool win=isWin(x,y,copyBoard);
+        if(isWin(x,y,copyBoard))
         {
             copyBoard[x][y]=None;
             copyEveryStep.pop_back();
-            return isMaximizing?1000000:-1000000;
+            return isMaximizing?INT_MAX:INT_MIN;
         }
             int value=minmax(copyBoard,copyEveryStep,depth-1,alpha,beta,!isMaximizing,player);
             //撤销
